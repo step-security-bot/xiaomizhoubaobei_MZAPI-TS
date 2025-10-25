@@ -43,10 +43,6 @@ $:
         - name: 安装CloudBase CLI
           script:
             - npm i -g @cloudbase/cli
-        - name: 安装husky并设置git钩子
-          script:
-            - npm install husky --no-save
-            - npx husky install
 main:
   - push:
       - docker:
