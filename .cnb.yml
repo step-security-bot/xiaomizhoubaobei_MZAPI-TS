@@ -6,7 +6,7 @@ $:
         - vscode
         - docker
       docker:
-        image: docker.cnb.cool/xmzzuzhi/cnb-docker/node:0.0.4
+        image: docker.cnb.cool/xmzzuzhi/cnb-docker/node:0.0.5
       stages:
         - name: 授予install_gpg_keys.sh权限
           script:
@@ -43,7 +43,30 @@ $:
         - name: 安装CloudBase CLI
           script:
             - npm i -g @cloudbase/cli
-        - name: 安装husky并设置git钩子
-          script:
-            - npm install husky --no-save
-            - npx husky install
+main:
+  - push:
+      - docker:
+          image: node:22
+        stages:
+          # 1. 安装 pnpm
+          - name: 安装 pnpm
+            script: npm i -g pnpm
+
+          # 2. 安装依赖
+          - name: 安装依赖
+            script: pnpm install --frozen-lockfile
+
+          # 3. 构建 TypeScript
+          - name: 构建 TypeScript
+            script: pnpm run build
+
+          # 4. 发布到 CNB npm 制品库
+          - name: npm publish
+            image: tencentcom/npm
+            settings:
+              username:   $CNB_TOKEN_USER_NAME
+              token:      $CNB_TOKEN
+              email:      $CNB_COMMITTER_EMAIL
+              registry:   https://npm.cnb.cool/mizhoubaobei/ku/mzapi-ts/-/packages/
+              folder:     dist
+              fail_on_version_conflict: true
