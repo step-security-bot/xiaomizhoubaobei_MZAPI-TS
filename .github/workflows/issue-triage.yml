@@ -1,0 +1,99 @@
+name: '️ iFLOW CLI 自动化问题分类'
+
+on:
+  issues:
+    types:
+      - 'opened'
+      - 'reopened'
+  issue_comment:
+    types:
+      - 'created'
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: '要分类的问题编号'
+        required: true
+        type: 'number'
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.event.issue.number }}'
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: 'bash'
+
+permissions:
+  contents: 'read'
+  issues: 'write'
+  statuses: 'write'
+
+jobs:
+  triage-issue:
+    if: |-
+      github.event_name == 'issues' ||
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'issue_comment' &&
+        contains(github.event.comment.body, '@iflow-cli /triage') &&
+        contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
+      )
+    runs-on: 'ubuntu-latest'
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: '运行 iFlow CLI 问题分类'
+        uses: iflow-ai/iflow-cli-action@v2.0.0
+        id: 'iflow_cli_issue_triage'
+        env:
+          GITHUB_TOKEN: '${{ secrets.TOKEN }}'
+          ISSUE_TITLE: '${{ github.event.issue.title }}'
+          ISSUE_BODY: '${{ github.event.issue.body }}'
+          ISSUE_NUMBER: '${{ github.event.issue.number }}'
+          REPOSITORY: '${{ github.repository }}'
+        with:
+          api_key: ${{ secrets.IFLOW_API_KEY }}
+          timeout: "3600"
+          debug: "true"
+          prompt: |
+            ## 角色
+
+            您是一个问题分类助手。分析当前的 GitHub 问题
+            并应用最合适的现有标签。使用可用的
+            工具收集信息；不要要求提供信息。
+
+            ## 步骤
+
+            1. 运行：`gh label list` 获取所有可用标签。
+            2. 审查环境变量中提供的问题标题和正文：
+               "${ISSUE_TITLE}" 和 "${ISSUE_BODY}"。
+            3. 按类型（错误、增强、文档、
+               清理等）和优先级（p0、p1、p2、p3）对问题进行分类。设置
+               标签按照 `kind/*` 和 `priority/*` 模式。
+            4. 使用以下命令将选定的标签应用到此问题：
+               `gh issue edit "${ISSUE_NUMBER}" --add-label "label1,label2"`
+            5. 如果存在 "status/needs-triage" 标签，使用以下命令移除它：
+               `gh issue edit "${ISSUE_NUMBER}" --remove-label "status/needs-triage"`
+
+            ## 指南
+
+            - 仅使用仓库中已存在的标签
+            - 不要添加评论或修改问题内容
+            - 仅分类当前问题
+            - 根据问题内容分配所有适用的标签
+            - 引用所有 shell 变量为 "${VAR}"（带引号和大括号）
+
+      - name: '发布问题分类失败评论'
+        if: |-
+          ${{ failure() && steps.iflow_cli_issue_triage.outcome == 'failure' }}
+        uses: 'actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea'
+        with:
+          github-token: '${{ secrets.TOKEN }}'
+          script: |-
+            github.rest.issues.createComment({
+              owner: '${{ github.repository }}'.split('/')[0],
+              repo: '${{ github.repository }}'.split('/')[1],
+              issue_number: '${{ github.event.issue.number }}',
+              body: 'iFlow CLI 问题分类存在问题。请检查[操作日志](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})了解详情。'
+            })

@@ -1,1 +1,1 @@
-export * from "./general-basic-ocr"
+export * from "./GeneralBasicOCR"

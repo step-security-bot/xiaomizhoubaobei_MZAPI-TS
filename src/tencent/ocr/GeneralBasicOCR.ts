@@ -97,8 +97,9 @@ export class GeneralBasicOCRClient {
       });
 
       // 解析响应
-      const result = await response.json();
-      const typedResult = result as GeneralBasicOCRResponse;
+      const result: any = await response.json();
+      // 腾讯云API响应格式为 { Response: { ... } }，需要提取Response字段
+      const typedResult = result.Response as GeneralBasicOCRResponse;
 
       // 执行回调函数
       if (cb) {
