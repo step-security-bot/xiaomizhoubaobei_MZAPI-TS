@@ -5,8 +5,13 @@ on:
       - main
     types: [closed]
 
+permissions:
+  contents: read
+
 jobs:
   sync-to-gitee:
+    permissions:
+      contents: write  # for Git to git push
     runs-on: ubuntu-latest
     if: github.event.pull_request.merged == true || github.event_name == 'push'
     env:
@@ -46,6 +51,8 @@ jobs:
         run: git push gitee main
 
   sync-to-cnb:
+    permissions:
+      contents: write  # for Git to git push
     runs-on: ubuntu-latest
     if: github.event.pull_request.merged == true || github.event_name == 'push'
     env:
