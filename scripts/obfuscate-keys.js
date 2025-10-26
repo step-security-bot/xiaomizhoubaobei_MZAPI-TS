@@ -23,11 +23,11 @@ function obfuscateKeys(filePath) {
   // 模糊化处理secretId和secretKey的值，前后一共保留5位字符
   content = content.replace(/(secretId\s*:\s*['"])([^'"])([^'"]{0,3})([^'"]*?)([^'"]{0,3})([^'"])(['"])/g, (match, prefix, first, start, middle, end, last, suffix) => {
     const total = first + start + end + last;
-    if (total.length <= 8) {
-      // 如果总长度不足8位，保留所有字符并添加***
+    if (total.length <= 5) {
+      // 如果总长度不足5位，保留所有字符并添加***
       return prefix + total + '***' + suffix;
     } else {
-      // 如果总长度超过8位，保留前后共8位
+      // 如果总长度超过5位，保留前后共5位
       return prefix + first + start + '***' + end + last + suffix;
     }
   });
