@@ -3,7 +3,7 @@ import { GeneralBasicOCRRequest, GeneralBasicOCRResponse } from '../../type';
 
 // 初始化客户端
 const client = new GeneralBasicOCRClient({
-    secretId: 'AKIDW******',
+    secretId: 'AKID*******',
     secretKey: 'MWTJ***kR6a',
 });
 
