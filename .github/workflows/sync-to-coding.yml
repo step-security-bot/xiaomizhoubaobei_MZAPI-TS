@@ -1,8 +1,5 @@
 name: 同步代码到gitee和CNB
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
